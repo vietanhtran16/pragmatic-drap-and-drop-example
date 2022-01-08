@@ -1,8 +1,12 @@
-import type { NextPage } from 'next'
+import type { GetStaticProps, NextPage } from 'next'
 import Head from 'next/head'
 import styles from '../styles/Home.module.css'
 
-const Home: NextPage = () => {
+interface Props {
+  description: string  
+}
+
+const Home: NextPage<Props> = ({description}) => {
   return (
     <div className={styles.container}>
       <Head>
@@ -17,7 +21,7 @@ const Home: NextPage = () => {
         </h1>
 
         <p className={styles.description}>
-          Hey there!
+          {description}
         </p>
       </main>
 
@@ -38,3 +42,11 @@ const Home: NextPage = () => {
 }
 
 export default Home
+
+export const getStaticProps: GetStaticProps<Props> = async () => {
+  const response = await fetch("http://localhost:3000/api/about")
+  const { description } = await response.json()
+  return {
+    props: { description },
+  }
+}
