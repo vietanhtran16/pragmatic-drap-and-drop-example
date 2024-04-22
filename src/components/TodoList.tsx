@@ -2,6 +2,7 @@ import { CSSProperties, FC, useEffect, useRef, useState } from "react";
 import {
   draggable,
   dropTargetForElements,
+  monitorForElements,
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import invariant from "tiny-invariant";
 import React from "react";
@@ -19,6 +20,23 @@ type TodoItem = {
   label: string;
   index: number;
 };
+
+function reorder(
+  array: Array<Omit<TodoItem, "index">>,
+  fromIndex: number,
+  toIndex: number
+) {
+  // Create a copy of the original array
+  const newArray = [...array];
+  // Remove the item from its current position
+  // @ts-ignore
+  const item = newArray.splice(fromIndex, 1, null)[0];
+  console.log("after remove", newArray);
+  // Insert the item at the new position
+  newArray.splice(toIndex, 0, item);
+  console.log("after add", newArray);
+  return newArray.filter(Boolean);
+}
 
 const ListItem: FC<TodoItem> = (props) => {
   const { id, label, index } = props;
@@ -98,7 +116,7 @@ const ListItem: FC<TodoItem> = (props) => {
       }
     >
       <DragHandleButton label="Reorder" ref={dragHandleRef} />
-      {label}
+      {`${index} - ${label}`}
       {closestEdge && <DropIndicator edge={closestEdge} />}
     </li>
   );
@@ -112,6 +130,33 @@ export const TodoList = () => {
     { id: 4, label: "Work" },
     { id: 5, label: "Cycle" },
   ]);
+
+  useEffect(() => {
+    return monitorForElements({
+      onDrop({ location, source }) {
+        const target = location.current.dropTargets[0];
+        if (!target) {
+          return;
+        }
+
+        const sourceData = source.data as TodoItem;
+        const targetData = target.data as TodoItem;
+
+        const indexOfTarget = todoItems.findIndex(
+          (item) => item.id === targetData.id
+        );
+        if (indexOfTarget < 0) {
+          return;
+        }
+
+        const closestEdgeOfTarget = extractClosestEdge(targetData);
+        const newIndexToMove =
+          closestEdgeOfTarget === "top" ? indexOfTarget : indexOfTarget + 1;
+
+        setTodoItems(reorder(todoItems, sourceData.index, newIndexToMove));
+      },
+    });
+  }, [todoItems]);
 
   return (
     <ul>
