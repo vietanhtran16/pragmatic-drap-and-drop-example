@@ -21,6 +21,10 @@ type TodoItem = {
   index: number;
 };
 
+function insert(array: any[], index: number, item: any) {
+  array.splice(index, 0, item);
+}
+
 function reorder(
   todoItems: Array<Omit<TodoItem, "index">>,
   idOfItemToMove: number,
@@ -36,7 +40,7 @@ function reorder(
       ({ id }) => id === afterId
     );
     const newIndexOfItemToMove = indexOfAfterItem + 1;
-    withoutItemToMove.splice(newIndexOfItemToMove, 0, itemToMove);
+    insert(withoutItemToMove, newIndexOfItemToMove, itemToMove);
     return withoutItemToMove;
   }
 
