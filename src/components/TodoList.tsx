@@ -22,20 +22,25 @@ type TodoItem = {
 };
 
 function reorder(
-  array: Array<Omit<TodoItem, "index">>,
-  fromIndex: number,
-  toIndex: number
+  todoItems: Array<Omit<TodoItem, "index">>,
+  idOfItemToMove: number,
+  afterId: number | undefined
 ) {
-  // Create a copy of the original array
-  const newArray = [...array];
-  // Remove the item from its current position
-  // @ts-ignore
-  const item = newArray.splice(fromIndex, 1, null)[0];
-  console.log("after remove", newArray);
-  // Insert the item at the new position
-  newArray.splice(toIndex, 0, item);
-  console.log("after add", newArray);
-  return newArray.filter(Boolean);
+  const copy = [...todoItems];
+  const itemToMove = copy.find(({ id }) => id === idOfItemToMove);
+  if (!itemToMove) return copy;
+  const withoutItemToMove = copy.filter(({ id }) => id !== idOfItemToMove);
+
+  if (afterId) {
+    const indexOfAfterItem = withoutItemToMove.findIndex(
+      ({ id }) => id === afterId
+    );
+    const newIndexOfItemToMove = indexOfAfterItem + 1;
+    withoutItemToMove.splice(newIndexOfItemToMove, 0, itemToMove);
+    return withoutItemToMove;
+  }
+
+  return [itemToMove, ...withoutItemToMove];
 }
 
 const ListItem: FC<TodoItem> = (props) => {
@@ -116,7 +121,7 @@ const ListItem: FC<TodoItem> = (props) => {
       }
     >
       <DragHandleButton label="Reorder" ref={dragHandleRef} />
-      {`${index} - ${label}`}
+      {`${id} - ${label}`}
       {closestEdge && <DropIndicator edge={closestEdge} />}
     </li>
   );
@@ -150,10 +155,17 @@ export const TodoList = () => {
         }
 
         const closestEdgeOfTarget = extractClosestEdge(targetData);
-        const newIndexToMove =
-          closestEdgeOfTarget === "top" ? indexOfTarget : indexOfTarget + 1;
 
-        setTodoItems(reorder(todoItems, sourceData.index, newIndexToMove));
+        const indexOfAfterItemIndex = todoItems.findIndex(
+          ({ id }) => id === targetData.id
+        );
+
+        const afterItemId =
+          closestEdgeOfTarget === "bottom"
+            ? targetData.id
+            : todoItems[indexOfAfterItemIndex - 1]?.id;
+
+        setTodoItems(reorder(todoItems, sourceData.id, afterItemId));
       },
     });
   }, [todoItems]);
